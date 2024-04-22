@@ -1,9 +1,18 @@
+import pyaudio
+from google.cloud import speech, texttospeech
+
+import streamlit as st
 
 # audio parameters
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 
 
+def speech_button():
+    return st.button("🎙️", on_click=click_microphone)
+
+def voice_input_button():
+    return st.button("버튼을 누른 후 말해주세요!", on_click=click_play_stt)
 
 
 class MicrophoneStream(object):

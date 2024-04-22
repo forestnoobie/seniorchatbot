@@ -1,3 +1,5 @@
+from modules import add_speach as sp
+
 import streamlit as st
 from langchain import PromptTemplate
 from langchain.llms import OpenAI
@@ -6,6 +8,7 @@ from PIL import Image
 
 import random
 import time
+
 
 template = """
     You are banker specialized for assiting old seniors who are older than 60.
@@ -28,15 +31,6 @@ def load_LLM(openai_api_key):
     ######## TODO 1. OpenAI -> Gemini
     llm = OpenAI(temperature=.7, openai_api_key=openai_api_key)
     return llm
-
-st.set_page_config(page_title="(working title) Idea's Bank Senior supporter", page_icon=":robot:")
-st.header("(working title) Idea's Bank Senior supporter")
-
-
-
-openai_api_key = "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"
-
-col1, col2 = st.columns(2)
 
 
 # Streamed response emulator
@@ -63,10 +57,26 @@ def llm_response_generator(query, llm):
         time.sleep(0.05)
 
 
+##### Streamlit
+
+st.set_page_config(page_title="(working title) Idea's Bank Senior supporter", page_icon=":robot:")
+st.header("(working title) Idea's Bank Senior supporter")
+
+
+
+openai_api_key = "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"
+
+col1, col2 = st.columns(2)
+
+
 
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "mic" not in st.session_state:
+    st.session_state.mic = False
+if "play_stt" not in st.session_state:
+    st.session_state.play_stt = False
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
@@ -84,14 +94,30 @@ if img_file_buffer is not None:
 
 
 # Accept user input
-if prompt := st.chat_input("What is up?"):
+
+##### Speech
+with col1 :
+    sp.speech_button()
+with col2:
+    # Voice input
+    if st.session_state.mic:
+        sp.voice_input_button()
+        prompt = None
+        if st.session_state.play_stt:
+            prompt = get_stt_input()
+            if prompt is not None:
+                st.code(prompt, language="markdown")
+                
+#Text  input
+if prompt := st.chat_input("What is up?") :
+
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
     # Display user message in chat message container
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    #### TODO 3. STT
+#### TODO 3. STT
 
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
@@ -102,7 +128,7 @@ if prompt := st.chat_input("What is up?"):
             response = st.write_stream(llm_response_generator(prompt, llm))
 
     #### TODO 5. TTS
-
-    # Add assistant response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": response})
+        #sp.get_tts_output(response)
+        # Add assistant response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": response})
 
