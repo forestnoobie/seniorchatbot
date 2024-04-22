@@ -1,4 +1,5 @@
-from modules import add_speach as sp
+from modules import add_speech as sp
+from modules import add_embedding as emb
 
 import streamlit as st
 from langchain import PromptTemplate
@@ -8,6 +9,12 @@ from PIL import Image
 
 import random
 import time
+
+_PROJECT="primeval-argon-420311"
+_INDEX_ENDPOINT="projects/854115243710/locations/us-central1/indexEndpoints/7122253694686461952"
+_DEPLOYED_INDEX_ID="multimodal_embedding_endpoint"
+
+
 
 
 template = """
@@ -77,6 +84,60 @@ if "mic" not in st.session_state:
     st.session_state.mic = False
 if "play_stt" not in st.session_state:
     st.session_state.play_stt = False
+if "uploader_visible" not in st.session_state:
+    st.session_state["uploader_visible"] = False
+
+
+# Display image upload on app
+with st.chat_message("system"):
+    cols= st.columns((3,1,1))
+    cols[0].write("Do you want to upload a photo that you want to know is smishing?")
+    cols[1].button("yes", use_container_width=True, on_click=emb.show_upload, args=[True])
+    cols[2].button("no", use_container_width=True, on_click=emb.show_upload, args=[False]) 
+    
+## upload image
+
+if st.session_state["uploader_visible"]:
+    file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
+    if file:
+        with st.spinner("Processing your file"):
+            
+             # To read file as bytes:
+            bytes_data = file.getvalue()          
+            embedding_client = emb.EmbeddingPredictionClient.getInstance(project = _PROJECT)
+            vectorsearch_client = emb.VectorSearchClient.getInstance(index_endpoint = _INDEX_ENDPOINT, deployed_index_id = _DEPLOYED_INDEX_ID)
+            image_embedding = embedding_client.get_embedding(image_bytes = bytes_data).image_embedding
+
+            # run query   
+            
+            # response = vectorsearch_client.find_neighbors(
+            #         query = image_embedding,
+            #         num_neighbors = 3
+            # )
+            # #client to access GCS bucket
+            # storage_client = StorageClient.getInstance(project = _PROJECT)
+            # bucket = storage_client.get_bucket(bucket = "smishing-image")
+    
+            result = [bytes_data]
+            
+            
+        # if response :
+        #     for r in response[0]:
+        #         name = r.id
+        #         name = name.split("/")[-1]
+        #         # r.distance
+        #         result.append(bucket.blob(name).download_as_bytes())
+        #         #st.write(result)
+    
+        if len(result)>=1:
+            with st.chat_message("assistant"):
+                st.write("Smishing is suspected. Related photos are as follows:")
+                st.image(result, width=300)                    
+        else:
+            with st.chat_message("assistant"):
+                st.write("Smishing is not suspected.")
+
+        
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
@@ -86,11 +147,7 @@ for message in st.session_state.messages:
 ## load llm
 llm = load_LLM(openai_api_key=openai_api_key)
 
-## Load image
-img_file_buffer = st.file_uploader('Upload a PNG image', type='png')
-if img_file_buffer is not None:
-    image = Image.open(img_file_buffer)
-    img_array = np.array(image)
+
 
 
 # Accept user input
@@ -107,7 +164,7 @@ with col2:
             prompt = get_stt_input()
             if prompt is not None:
                 st.code(prompt, language="markdown")
-                
+
 #Text  input
 if prompt := st.chat_input("What is up?") :
 
