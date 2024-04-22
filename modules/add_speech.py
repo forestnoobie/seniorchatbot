@@ -1,5 +1,9 @@
+import base64
+from time import sleep
+
 import pyaudio
 from google.cloud import speech, texttospeech
+from six.moves import queue
 
 import streamlit as st
 
@@ -10,6 +14,7 @@ CHUNK = int(RATE / 10)  # 100ms
 
 def speech_button():
     return st.button("🎙️", on_click=click_microphone)
+
 
 def voice_input_button():
     return st.button("버튼을 누른 후 말해주세요!", on_click=click_play_stt)
@@ -81,7 +86,6 @@ class MicrophoneStream(object):
                     break
 
             yield b"".join(data)
-
 
 
 def listen_print_loop(responses):
@@ -183,10 +187,12 @@ def get_tts_output(user_input: str):
     )
 
 
+# when mic button is clicked, the stt engine will NOT automatically start
 def click_microphone():
     st.session_state.mic = not st.session_state.mic
+    st.session_state.play_stt = False
 
 
+# stt engine will start on every click
 def click_play_stt():
-    st.session_state.play_stt = not st.session_state.play_stt
-
+    st.session_state.play_stt = True
