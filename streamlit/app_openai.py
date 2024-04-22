@@ -1,7 +1,10 @@
 import streamlit as st
 from langchain import PromptTemplate
 from langchain.llms import OpenAI
+import numpy as np
+from PIL import Image
 
+import random
 import time
 
 template = """
@@ -73,6 +76,11 @@ for message in st.session_state.messages:
 ## load llm
 llm = load_LLM(openai_api_key=openai_api_key)
 
+## Load image
+img_file_buffer = st.file_uploader('Upload a PNG image', type='png')
+if img_file_buffer is not None:
+    image = Image.open(img_file_buffer)
+    img_array = np.array(image)
 
 
 # Accept user input
@@ -87,7 +95,7 @@ if prompt := st.chat_input("What is up?"):
 
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
-        if  not len(st.session_state.messages)  : # Initial message
+        if   len(st.session_state.messages) == 0 : # Initial message
             response = st.write_stream(response_generator())
         else :
             #### TODO 4. Fraud detection + MultiModal
