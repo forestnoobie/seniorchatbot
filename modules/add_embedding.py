@@ -19,6 +19,8 @@ import streamlit as st
 def show_upload(state:bool):
     st.session_state["uploader_visible"] = state
 
+def direct_llm(state:bool):
+    st.session_state["direct_llm"] = state
 
 class SingletonInstance:
     __instance = None

@@ -11,7 +11,7 @@ from googleapiclient.errors import HttpError
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 
-def add_calandar(apply_date="2024-04-22"):
+def add_calendar(apply_date="2024-04-22"):
   """Shows basic usage of the Google Calendar API.
   Prints the start and name of the next 10 events on the user's calendar.
   """

@@ -1,7 +1,10 @@
-import pyaudio
-from google.cloud import speech, texttospeech
+import base64
+from time import sleep
 
+from google.cloud import speech, texttospeech
+from six.moves import queue
 import streamlit as st
+import pyaudio
 
 # audio parameters
 RATE = 16000
@@ -137,7 +140,8 @@ def get_stt_input():
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=RATE,
-        language_code="ko-KR",
+        language_code="en-US",
+        
     )
     streaming_config = speech.StreamingRecognitionConfig(
         config=config, interim_results=True
@@ -164,8 +168,8 @@ def get_tts_output(user_input: str):
     # Set the text and config
     synthesis_input = texttospeech.SynthesisInput(text=user_input)
     voice = texttospeech.VoiceSelectionParams(
-        language_code="ko-KR",
-        ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL,
+        language_code="en-US",
+        name="en-US-Neural2-C",
     )
     audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.LINEAR16,
@@ -185,8 +189,8 @@ def get_tts_output(user_input: str):
 
 def click_microphone():
     st.session_state.mic = not st.session_state.mic
+    st.session_state.play_stt = False
 
 
 def click_play_stt():
-    st.session_state.play_stt = not st.session_state.play_stt
-
+    st.session_state.play_stt = True

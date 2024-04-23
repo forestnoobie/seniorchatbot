@@ -1,15 +1,15 @@
 import random
 import time
+import datetime
 
 import streamlit as st
-from langchain import PromptTemplate
-from langchain.llms import OpenAI
 import numpy as np
 from PIL import Image
 
 from modules import add_speech as sp
 from modules import add_embedding as emb
 from modules import add_multimodal as mm
+from modules import add_google_calendar as gc
 
 
 ### Initial setting
@@ -19,16 +19,7 @@ _DEPLOYED_INDEX_ID="multimodal_embedding_endpoint"
 llm_type = "gemini" # openai
 
 
-
-
 ######## Gemini
-# def load_LLM(openai_api_key):
-#     """Logic for loading the chain you want to use should go here."""
-#     # Make sure your openai_api_key is set as an environment variable]
-#     ######## TODO 1. OpenAI -> Gemini
-#     llm = OpenAI(temperature=.7, openai_api_key=openai_api_key)
-#     return llm
-
 def load_gemini():
     model = get_gemini()
     return model
@@ -55,10 +46,6 @@ st.header("(working title) Idea's Bank Senior supporter")
 
 
 
-openai_api_key = "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"
-
-col1, col2 = st.columns(2)
-
 
 ## load llm
 #llm = load_LLM(openai_api_key=openai_api_key)
@@ -74,8 +61,14 @@ if "play_stt" not in st.session_state:
     st.session_state.play_stt = False
 if "uploader_visible" not in st.session_state:
     st.session_state["uploader_visible"] = False
+if "direct_llm" not in st.session_state:
+    st.session_state["direct_llm"] = False
 if "chat_session" not in st.session_state:
     st.session_state["chat_session"] = llm.start_chat(history=[])
+
+
+# Accept user input
+col1, col2 = st.columns([1, 12])
 
 
 # Display image upload on app
@@ -88,8 +81,11 @@ with st.chat_message("system"):
 ## upload image
 file = None
 if st.session_state["uploader_visible"]:
+    fl_cols =  st.columns((1,1))
+    fl_cols[0].button("Smishing test", on_click=emb.direct_llm, use_container_width=True, args=[True])
+    fl_cols[1].button("Financial counseling", on_click=emb.direct_llm, use_container_width=True, args=[False])
     file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
-    if file:
+    if not st.session_state["direct_llm"] and file:
         with st.spinner("Processing your file"):
             
              # To read file as bytes:
@@ -132,58 +128,68 @@ if st.session_state["uploader_visible"]:
 # Display chat messages from history on app rerun
 for content in st.session_state.chat_session.history:
     with st.chat_message("assistant" if content.role == "model" else "user"):
+        #st.markdown(content.parts[0].text)
         st.markdown(content.parts[0].text)
 
 
-
-
-# Accept user input
-
 ##### Speech
+voice_prompt = None
 with col1 :
     sp.speech_button()
 with col2:
     # Voice input
     if st.session_state.mic:
         sp.voice_input_button()
-        prompt = None
         if st.session_state.play_stt:
-            prompt = get_stt_input()
-            if prompt is not None:
-                st.code(prompt, language="markdown")
+            voice_prompt = sp.get_stt_input()
+    
+if voice_prompt :
+    st.session_state.messages.append({"role": "user", "content": voice_prompt})
+    with st.chat_message("user"):
+        st.markdown(voice_prompt)
 
+## image input
+parts = []
+img_prompt = None
 
-file_gemini = None
-file_gemini = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
-
+if file : 
+    img_prompt = mm.transform_file(file)
+    parts.append(img_prompt)
 
 #Text  input
-if prompt := st.chat_input("What's up?") :
-    parts = [prompt]
-
-
-    
-    if file_gemini :
-        parts.append(mm.transform_file(file_gemini))
-
+chat_prompt = None
+if chat_prompt := st.chat_input("What's up?") :
     # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.messages.append({"role": "user", "content": chat_prompt})
     # Display user message in chat message container
     with st.chat_message("user"):
-        st.markdown(prompt)
+        st.markdown(chat_prompt)
 
 #### TODO 3. STT
 
-    # Display assistant response in chat message container
-    with st.chat_message("assistant"):
-        if   len(st.session_state.messages) == 0 : # Initial message
-            response = st.write_stream(response_generator())
-        else :
-            #### TODO 4. Fraud detection + MultiModal
-            response = st.session_state.chat_session.send_message(parts) 
-            st.markdown(response.text)
-    #### TODO 5. TTS
-        #sp.get_tts_output(response)
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": response})
+# Display assistant response in chat message container
+if chat_prompt :
+    parts.insert(0, chat_prompt)
+    if "take out a loan" in chat_prompt:
+        today_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        gc.add_calendar(today_date)
+        with st.chat_message("assistant"):
+            st.markdown("I would add important dates in your google calander.:)")
 
+if parts : 
+        with st.chat_message("assistant"):
+            if   len(st.session_state.messages) == 0 : # Initial message
+                response = st.write_stream(response_generator())
+                # TTS 
+                sp.get_tts_output(response)
+            else : # Multimodal
+                response = st.session_state.chat_session.send_message(parts) 
+                # TTS 
+                sp.get_tts_output(response.text)
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                
+
+    
+
+    
