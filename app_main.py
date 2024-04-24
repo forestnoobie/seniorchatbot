@@ -87,7 +87,6 @@ if st.session_state["uploader_visible"]:
     file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
     if not st.session_state["direct_llm"] and file:
         with st.spinner("Processing your file"):
-            
              # To read file as bytes:
             bytes_data = file.getvalue()          
             embedding_client = emb.EmbeddingPredictionClient.getInstance(project = _PROJECT)

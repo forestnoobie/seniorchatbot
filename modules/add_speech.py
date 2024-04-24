@@ -2,6 +2,7 @@ import base64
 from time import sleep
 
 from google.cloud import speech, texttospeech
+from google.cloud import texttospeech
 from six.moves import queue
 import streamlit as st
 import pyaudio

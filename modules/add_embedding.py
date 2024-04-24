@@ -1,12 +1,15 @@
 import base64
 import time
 import typing
+import json
+from subprocess import call
+
 from dataclasses import dataclass
 from google.cloud import aiplatform, storage
 from google.protobuf import struct_pb2
+import numpy as np
 import tempfile
-import json
-from subprocess import call
+
 from absl import app
 from absl import flags
 import streamlit as st
@@ -15,12 +18,64 @@ import streamlit as st
 # _TEXT = flags.DEFINE_string('text', None, 'Text to input')
 # _PROJECT = flags.DEFINE_string('project', None, 'Project id')
 
+_PROJECT="primeval-argon-420311"
+_INDEX_ENDPOINT="projects/854115243710/locations/us-central1/indexEndpoints/7122253694686461952"
+_DEPLOYED_INDEX_ID="multimodal_embedding_endpoint"
+
 
 def show_upload(state:bool):
     st.session_state["uploader_visible"] = state
 
 def direct_llm(state:bool):
     st.session_state["direct_llm"] = state
+
+def get_emb_result(file):
+    
+    bytes_data = file.getvalue()          
+    embedding_client = EmbeddingPredictionClient.getInstance(project = _PROJECT)
+    vectorsearch_client = VectorSearchClient.getInstance(index_endpoint = _INDEX_ENDPOINT, deployed_index_id = _DEPLOYED_INDEX_ID)
+    image_embedding = embedding_client.get_embedding(image_bytes = bytes_data).image_embedding
+
+    # run query   
+    
+    # response = vectorsearch_client.find_neighbors(
+    #         query = image_embedding,
+    #         num_neighbors = 3
+    # )
+    # #client to access GCS bucket
+    # storage_client = StorageClient.getInstance(project = _PROJECT)
+    # bucket = storage_client.get_bucket(bucket = "smishing-image")
+
+    result = [bytes_data]
+    return result
+
+
+def get_emb_result_text(file, text):
+    
+    bytes_data = file.getvalue()          
+    embedding_client = EmbeddingPredictionClient.getInstance(project = _PROJECT)
+    vectorsearch_client = VectorSearchClient.getInstance(index_endpoint = _INDEX_ENDPOINT, deployed_index_id = _DEPLOYED_INDEX_ID)
+    emb = embedding_client.get_embedding(image_bytes = bytes_data, text=text).image_embedding
+    image_embedding = emb.image_embedding
+    text_embedding = emb.text_embedding
+
+
+    ## Image_text search
+    mix_embedding = (image_embedding + text_embedding) / 2
+    mix_embedding = np.linalg.norm(mix_embedding)
+    
+    # run query   
+    
+    # response = vectorsearch_client.find_neighbors(
+    #         query = image_embedding,
+    #         num_neighbors = 3
+    # )
+    # #client to access GCS bucket
+    # storage_client = StorageClient.getInstance(project = _PROJECT)
+    # bucket = storage_client.get_bucket(bucket = "smishing-image")
+
+    result = [bytes_data]
+    return result
 
 class SingletonInstance:
     __instance = None
@@ -130,7 +185,7 @@ class EmbeddingClient:
     def make_embedding(self, bucket_name):
         images_byte = self.download_images(bucket_name)       
         #client to access multimodal-embeddings model to convert text to embeddings
-        images_embedding = [self.client.get_embedding(image_bytes=image) for image in images_byte]
+        images_embedding = [self.e.get_embedding(image_bytes=image) for image in images_byte]
 
         return images_embedding
     
