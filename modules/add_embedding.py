@@ -11,12 +11,15 @@ import numpy as np
 
 import vertexai
 from vertexai.language_models import TextEmbeddingModel
-from langchain_google_vertexai import VertexAIEmbeddings
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_vertexai import (
     VectorSearchVectorStore,
     VectorSearchVectorStoreDatastore,
 )
+from langchain.chains import RetrievalQA
+from langchain_google_vertexai import VertexAI
+from langchain_google_vertexai import VertexAIEmbeddings
 
 from google.cloud.aiplatform.matching_engine.matching_engine_index_endpoint import (
     Namespace,
@@ -34,59 +37,25 @@ import streamlit as st
 # _TEXT = flags.DEFINE_string('text', None, 'Text to input')
 # _PROJECT = flags.DEFINE_string('project', None, 'Project id')
 
-def show_upload(state:bool):
-    st.session_state["uploader_visible"] = state
+### Initial setting
+_PROJECT = "primeval-argon-420311"
+_LOCATION = "us-central1"
+_IMAGE_DIMENSIONS = 1408
+_TEXT_DIMENSIONS = 768
+_BUCKET = "embedding-text"
+_BUCKET_URI = f"gs://{BUCKET}"
+_DISPLAY_NAME = "text_embedding"
+_DEPLOYED_INDEX_ID = "text_embedding_index"
 
-def direct_llm(state:bool):
-    st.session_state["direct_llm"] = state
-
-def get_emb_result(file):
-    
-    bytes_data = file.getvalue()          
-    embedding_client = EmbeddingPredictionClient.getInstance(project = _PROJECT)
-    vectorsearch_client = VectorSearchClient.getInstance(index_endpoint = _INDEX_ENDPOINT, deployed_index_id = _DEPLOYED_INDEX_ID)
-    image_embedding = embedding_client.get_embedding(image_bytes = bytes_data).image_embedding
-
-    # run query   
-    
-    # response = vectorsearch_client.find_neighbors(
-    #         query = image_embedding,
-    #         num_neighbors = 3
-    # )
-    # #client to access GCS bucket
-    # storage_client = StorageClient.getInstance(project = _PROJECT)
-    # bucket = storage_client.get_bucket(bucket = "smishing-image")
-
-    result = [bytes_data]
-    return result
+# Set variables for the current deployed index.
+_API_ENDPOINT="1754456625.us-central1-854115243710.vdb.vertexai.goog"
+_INDEX_ENDPOINT="projects/854115243710/locations/us-central1/indexEndpoints/1709912105005613056"
+_DEPLOYED_INDEX_ID="text_embedding_endpoint"
+_INDEX_ID = "5709952999040745472"
+_ENDPOINT_ID = "1709912105005613056"
 
 
-def get_emb_result_text(file, text):
-    
-    bytes_data = file.getvalue()          
-    embedding_client = EmbeddingPredictionClient.getInstance(project = _PROJECT)
-    vectorsearch_client = VectorSearchClient.getInstance(index_endpoint = _INDEX_ENDPOINT, deployed_index_id = _DEPLOYED_INDEX_ID)
-    emb = embedding_client.get_embedding(image_bytes = bytes_data, text=text).image_embedding
-    image_embedding = emb.image_embedding
-    text_embedding = emb.text_embedding
 
-
-    ## Image_text search
-    mix_embedding = (image_embedding + text_embedding) / 2
-    mix_embedding = np.linalg.norm(mix_embedding)
-    
-    # run query   
-    
-    # response = vectorsearch_client.find_neighbors(
-    #         query = image_embedding,
-    #         num_neighbors = 3
-    # )
-    # #client to access GCS bucket
-    # storage_client = StorageClient.getInstance(project = _PROJECT)
-    # bucket = storage_client.get_bucket(bucket = "smishing-image")
-
-    result = [bytes_data]
-    return result
 
 class SingletonInstance:
     __instance = None
@@ -104,7 +73,7 @@ class ImageEmbeddingResponse(typing.NamedTuple):
 
 
 class StorageClient():
-    def __init__(self, project: str, bucket: str = "smishing-image"):
+    def __init__(self, project: str, bucket: str = "embedding-image"):
         self.client = storage.Client(project = project)
 
     def get_bucket(self, bucket:str):
@@ -116,15 +85,16 @@ class VectorSearchClient():
     def __init__(self, index_endpoint: str, deployed_index_id: str, bucket_uri: str, index_id: str, endpoint_id: str):
         self.index_endpoint = index_endpoint
         self.deployed_index_id = deployed_index_id
-        self.index_endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint)
+        self.index = aiplatform.MatchingEngineIndexEndpoint(index_endpoint)
         self.bucket_uri = bucket_uri
         self.index_id = index_id
         self.endpoint_id = endpoint_id
         
+        
 
     # similarity search by vector 
     def find_neighbors(self, query: typing.List[float], num_neighbors: int = 3):
-        response = self.index_endpoint.find_neighbors(
+        response = self.index.find_neighbors(
                         deployed_index_id = self.deployed_index_id,
                         queries = [query],
                         num_neighbors = num_neighbors
@@ -134,6 +104,10 @@ class VectorSearchClient():
     def update_index(self):
         index = aiplatform.MatchingEngineIndex(self.index_id)
         index.update_embeddings(contents_delta_uri=self.bucket_uri, is_complete_overwrite=True)
+
+    def retriever(self):
+        
+        return vector_store.as_retriever()
 
 # Using Google API
 class TextEmbeddingPredictionClient(SingletonInstance):
@@ -155,8 +129,8 @@ class TextEmbeddingPredictionClient(SingletonInstance):
         return text_embeddings
         
 
-# Using Langchain
-class TextEmbeddingClient(SingletonInstance):
+# Using Langchain API
+class TextEmbeddingLCHClient(SingletonInstance):
     def __init__(self,  index_id: str, endpoint_id:str, project = "primeval-argon-420311", location: str = "us-central1", model: str = "textembedding-gecko@001", bucket: str = "embedding-text"):
         self.location = location
         self.project = project
@@ -189,6 +163,10 @@ class TextEmbeddingClient(SingletonInstance):
         # Try running a similarity search with text filter
         # filters = [Namespace(name="season", allow_tokens=["spring"])]
         return self.vectorstore.similarity_search(query, k=k, filter = filters)
+
+    def as_retriever(self):
+        # Initialize the vectore_store as retriever
+        return self.vectorstore.as_retriever()
     
 
     
@@ -263,7 +241,7 @@ class ImageEmbeddingClient(SingletonInstance):
     def make_embeddings(self, bucket_name):
         images_bytes = self.download_images(bucket_name)       
         #client to access multimodal-embeddings model to convert image to embeddings
-        images_embeddings = [self.client.generate_image_embedding(image_bytes=image) for image in images_bytes
+        images_embeddings = [self.client.generate_image_embedding(image_bytes=image) for image in images_bytes]
 
         return images_embeddings
         
@@ -293,6 +271,52 @@ class ImageEmbeddingClient(SingletonInstance):
 
 
 
+def show_upload(state:bool):
+    st.session_state["uploader_visible"] = state
+
+def direct_llm(state:bool):
+    st.session_state["direct_llm"] = state
+
+def get_emb_result(file): 
+    bytes_data = file.getvalue()          
+    image_embedding_client = ImageEmbeddingPredictionClient.getInstance(project = _PROJECT)
+    vectorsearch_client = VectorSearchClient.getInstance(index_endpoint=_INDEX_ENDPOINT,deployed_index_id=_DEPLOYED_INDEX_ID, bucket_uri=_BUCKET_URI, index_id=_INDEX_ID, endpoint_id = _ENDPOINT_ID)
+    image_embedding = image_embedding_client.generate_image_embedding(image_bytes = bytes_data).image_embedding
+
+    # run query   
+    
+    response = vectorsearch_client.find_neighbors(
+            query = image_embedding,
+            num_neighbors = 1
+    )
+    
+    #client to access GCS bucket
+    storage_client = StorageClient.getInstance(project = _PROJECT)
+    bucket = storage_client.get_bucket(bucket = "embedding-image")
+
+    result = [bytes_data]
+    return result
+
+
+def get_emb_result_text(text):
+    text_embedding_client = TextEmbeddingLCHClient(index_id=_INDEX_ID, endpoint_id = _ENDPOINT_ID)
+    llm = VertexAI(model_name="gemini-pro")
+    retriever = text_embedding_client.as_retriever()
+    retrieval_qa = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=retriever,
+    return_source_documents=True,)
+    
+    question = "What is Individiual Savings Account? Tell me friendly"
+    response = retrieval_qa({"query": question})
+    #print(f"{response['result']}")
+    #print("REFERENCES")
+    #print(f"{response['source_documents']}")
+
+    
+    return response['result']
+    
 def main(argv):
     pass
 
