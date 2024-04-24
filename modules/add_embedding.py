@@ -34,12 +34,6 @@ import streamlit as st
 # _TEXT = flags.DEFINE_string('text', None, 'Text to input')
 # _PROJECT = flags.DEFINE_string('project', None, 'Project id')
 
-_PROJECT="primeval-argon-420311"
-_INDEX_ENDPOINT="projects/854115243710/locations/us-central1/indexEndpoints/7122253694686461952"
-_DEPLOYED_INDEX_ID="multimodal_embedding_endpoint"
-
-
-
 def show_upload(state:bool):
     st.session_state["uploader_visible"] = state
 
@@ -138,7 +132,7 @@ class VectorSearchClient():
         return response
     
     def update_index(self):
-        index = aiplatform.MatchingEngineIndex("5709952999040745472")
+        index = aiplatform.MatchingEngineIndex(self.index_id)
         index.update_embeddings(contents_delta_uri=self.bucket_uri, is_complete_overwrite=True)
 
 # Using Google API
@@ -264,19 +258,12 @@ class ImageEmbeddingClient(SingletonInstance):
         image_paths = [ obj_nm for obj_nm in self.list_blobs(bucket_name)]
 
         return [bucket.blob(image).download_as_bytes() for image in image_paths]
-    
-<<<<<<< HEAD
-    def make_embedding(self, bucket_name):
-        images_byte = self.download_images(bucket_name)       
-        #client to access multimodal-embeddings model to convert text to embeddings
-        images_embedding = [self.e.get_embedding(image_bytes=image) for image in images_byte]
-=======
+
     # make embeddings from bucket
     def make_embeddings(self, bucket_name):
         images_bytes = self.download_images(bucket_name)       
         #client to access multimodal-embeddings model to convert image to embeddings
-        images_embeddings = [self.client.generate_image_embedding(image_bytes=image) for image in images_bytes]
->>>>>>> 1794cbf (adding text embedding)
+        images_embeddings = [self.client.generate_image_embedding(image_bytes=image) for image in images_bytes
 
         return images_embeddings
         
