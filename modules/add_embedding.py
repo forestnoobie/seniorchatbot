@@ -97,7 +97,7 @@ class StorageClient():
         return bucket
         
 
-class VectorSearchClient():
+class VectorSearchClient(SingletonInstance):
     def __init__(self, index_endpoint: str , deployed_index_id: str, bucket_uri: str, index_id: str, endpoint_id: str, location:str):
         self.index_endpoint_name = index_endpoint
         self.deployed_index_id = deployed_index_id
@@ -129,21 +129,30 @@ class VectorSearchClient():
     # update index from bukcet
     def update_index(self):
         self.index.update_embeddings(contents_delta_uri=self.bucket_uri, is_complete_overwrite=True)
+        return
 
     # upsert datapoint
-    def upsert_datapoint(self):
-        pass
+    def upsert_datapoint(self, id:typing.List[str], vectors: typing.List[ImageEmbeddingResponse]):
+        datapoints =[
+            {
+                "datapoint_id": str(path),
+                "feature_vector": [value for value in vector.image_embedding]
+              }
+               for path, vector in zip(id, vectors)
+          ]
+        self.index.upsert_datapoints(datapoints=datapoints)
+        return
 
 
 # Using Google API
 class TextEmbeddingPredictionClient(SingletonInstance):
-    def __init__(self, project = _PROJECT, location: str = _TEXT_LOCATION, model: str = "textembedding-gecko@001"):    
+    def __init__(self, project: str = _PROJECT, location: str = _TEXT_LOCATION, model: str = "textembedding-gecko@001"):    
         self.location = location
         self.project = project
         self.model = model
         self.client = TextEmbeddingModel.from_pretrained(self.model)
         
-    def generate_text_embeddings(self, texts: list) -> list:
+    def generate_text_embeddings(self, texts: typing.List) -> typing.List:
         response = self.client.get_embeddings(texts)
         text_embeddings = [embedding.values for embedding in response]
         return text_embeddings
@@ -151,7 +160,7 @@ class TextEmbeddingPredictionClient(SingletonInstance):
 
 # Using Langchain API
 class TextEmbeddingLCHClient(SingletonInstance):
-    def __init__(self,  index_id: str, endpoint_id:str, project = _PROJECT, location: str = _TEXT_LOCATION, model: str = "textembedding-gecko@001", bucket: str = _TEXT_BUCKET):
+    def __init__(self,  index_id: str, endpoint_id:str, project: str = _PROJECT, location: str = _TEXT_LOCATION, model: str = "textembedding-gecko@001", bucket: str = _TEXT_BUCKET):
         self.location = location
         self.project = project
         self.index_id = index_id
@@ -172,7 +181,7 @@ class TextEmbeddingLCHClient(SingletonInstance):
                         )
         
     # upload text embedding to vectorstore
-    def upload_text(self, record_data:typing.List[typing.Dict]):
+    def upload_text(self, record_data: typing.List[typing.Dict]):
         texts = []
         metadatas = []
         for record in record_data:
@@ -186,7 +195,7 @@ class TextEmbeddingLCHClient(SingletonInstance):
         return self.vectorstore.add_texts(texts=texts, metadatas=metadatas, is_complete_overwrite=True)
 
     # search by text
-    def similarity_search(self, query: str, k: int = 3, filters: dict=None):
+    def similarity_search(self, query: str, k: int = 3, filters: dict = None):
         # Try running a similarity search with text filter
         # filters = [Namespace(name="season", allow_tokens=["spring"])]
         return self.vectorstore.similarity_search(query, k=k, filter = filters)
@@ -194,6 +203,7 @@ class TextEmbeddingLCHClient(SingletonInstance):
     def as_retriever(self):
         # Initialize the vectore_store as retriever
         return self.vectorstore.as_retriever()
+
     
 
     
@@ -204,12 +214,13 @@ class ImageEmbeddingPredictionClient(SingletonInstance):
                  api_regional_endpoint: str = "us-central1-aiplatform.googleapis.com"):
         
         client_options = {"api_endpoint": api_regional_endpoint}
+        
         self.client = aiplatform.gapic.PredictionServiceClient(client_options=client_options)
         self.location = location
         self.project = project
         
     # get image embedding
-    def generate_image_embedding(self, text: str = None, image_bytes: bytes = None):
+    def generate_image_embedding(self, text: str = None, image_bytes: bytes = None) -> ImageEmbeddingResponse:
         if not text and not image_bytes:
             raise ValueError('At least one of text or image_bytes must be specified.')
 
@@ -273,7 +284,7 @@ class ImageEmbeddingClient(SingletonInstance):
         return images_embeddings
         
     # upload embeddings to bucket
-    def upload_image_embeddings(self, images_path: str, images_embedding:str, embedding_url: str = "gs://embedding-image/", 
+    def upload_image_embeddings(self, images_path: str, images_embedding: str, embedding_url: str = "gs://embedding-image/", 
                         ):
         # Create temporary file to write embeddings to
         embeddings_file = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
