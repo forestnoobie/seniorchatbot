@@ -16,7 +16,7 @@ def speech_button():
     return st.button("🎙️", on_click=click_microphone)
 
 def voice_input_button():
-    return st.button("버튼을 누른 후 말해주세요!", on_click=click_play_stt)
+    return st.button("Press the button and speak!", on_click=click_play_stt)
 
 
 class MicrophoneStream(object):

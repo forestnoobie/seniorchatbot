@@ -60,10 +60,9 @@ _TEXT_INDEX_ENDPOINT="projects/854115243710/locations/us-central1/indexEndpoints
 _TEXT_INDEX_ID = "5709952999040745472"
 _TEXT_ENDPOINT_ID = "1011572687786475520"
 
-
 # Set variables for the current deployed text index.
 _IMAGE_DISPLAY_NAME = "image_embedding"
-_IMAGE_DEPLOYED_INDEX_ID = "image_embedding_endpoint"
+_IMAGE_DEPLOYED_INDEX_ID = "image_embedding_endpoint_1714039043054"
 _IMAGE_API_ENDPOINT = "1253489155.us-east1-854115243710.vdb.vertexai.goog"
 _IMAGE_INDEX_ENDPOINT = "projects/854115243710/locations/us-east1/indexEndpoints/3300514004257996800"
 _IMAGE_INDEX_ID = "6930485672662794240"
@@ -93,7 +92,7 @@ class StorageClient():
         self.client = storage.Client(project = project)
 
     def get_bucket(self, bucket:str):
-        bucket = self.client.bucket(bucket = bucket)
+        bucket = self.client.bucket(bucket)
         return bucket
         
 
@@ -329,19 +328,43 @@ def get_emb_result(text):
     )
     if response:
         path = response[0][0].id
+        path = path.split("/")[-1]
     
         #client to access GCS bucket
-        storage_client = StorageClient.getInstance(project = _PROJECT)
-        bucket = storage_client.get_bucket(bucket = "embedding-image")
-        bytes_data = bucket.blob(image).download_as_bytes()
+        storage_client = StorageClient(project = _PROJECT)
+        bucket = storage_client.get_bucket(bucket = "financial-product-image")
+        bytes_data = bucket.blob(path).download_as_bytes()
 
     result = [bytes_data]
     return result
 
 
+def get_emb_result_image(file: bytes):
+    image_embdding_client = ImageEmbeddingPredictionClient()
+    vector = image_embdding_client.generate_image_embedding(image_bytes = file)
+    vector_search_client = VectorSearchClient.getInstance(index_endpoint= _IMAGE_INDEX_ENDPOINT, deployed_index_id=_IMAGE_DEPLOYED_INDEX_ID, bucket_uri=_IMAGE_BUCKET_URI, index_id=_IMAGE_INDEX_ID, endpoint_id=_IMAGE_ENDPOINT_ID, location = _IMAGE_LOCATION)
+
+    # run query 
+    response = vector_search_client.find_neighbors(
+            query = vector.image_embedding,
+            num_neighbors = 1
+    )
+    if response:
+        path = response[0][0].id
+        path = path.split("/")[-1]
+    
+        #client to access GCS bucket
+        storage_client = StorageClient(project = _PROJECT)
+        bucket = storage_client.get_bucket(bucket = "financial-product-image")
+        bytes_data = bucket.blob(path).download_as_bytes()
+
+    result = [bytes_data]
+    
+    return result
+
 def get_emb_result_text(text):
     
-    text_embedding_client = TextEmbeddingLCHClient(index_id=_INDEX_ID, endpoint_id = _ENDPOINT_ID)
+    text_embedding_client = TextEmbeddingLCHClient(index_id=_TEXT_INDEX_ID, endpoint_id = _TEXT_ENDPOINT_ID)
     
     llm = VertexAI(model_name="gemini-pro")
     retriever = text_embedding_client.as_retriever()
