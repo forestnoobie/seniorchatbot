@@ -68,10 +68,11 @@ def llm_response_generator(query, llm):
 
 ##### Streamlit
 
-st.set_page_config(
-    page_title="(working title) Idea's Bank Senior supporter", page_icon=":robot:"
+st.set_page_config(page_title="Ideas Bank Private Banker", page_icon=":robot:")
+st.header(
+    ":orange[Ideas Bank Private Banker]",
+    divider="orange",
 )
-st.header("(working title) Idea's Bank Senior supporter")
 
 
 openai_api_key = "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"
