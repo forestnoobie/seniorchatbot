@@ -39,23 +39,35 @@ import streamlit as st
 
 ### Initial setting
 _PROJECT = "primeval-argon-420311"
-_LOCATION = "us-central1"
+
+_TEXT_LOCATION = "us-central1"
+_IMAGE_LOCATION = "us-east1"
+
 _IMAGE_DIMENSIONS = 1408
 _TEXT_DIMENSIONS = 768
-_BUCKET = "embedding-text"
-_BUCKET_URI = f"gs://{BUCKET}"
-_DISPLAY_NAME = "text_embedding"
-_DEPLOYED_INDEX_ID = "text_embedding_index"
+
+_TEXT_BUCKET = "embedding-text"
+_IMAGE_BUCKET = "embedding-image"
+
+_TEXT_BUCKET_URI = f"gs://{_TEXT_BUCKET}"
+_IMAGE_BUCKET_URI = f"gs://{_IMAGE_BUCKET}"
+
 
 # Set variables for the current deployed index.
+_DISPLAY_NAME = "text_embedding"
+_DEPLOYED_INDEX_ID = "text_embedding_index"
 _API_ENDPOINT="1754456625.us-central1-854115243710.vdb.vertexai.goog"
 _INDEX_ENDPOINT="projects/854115243710/locations/us-central1/indexEndpoints/1709912105005613056"
 _DEPLOYED_INDEX_ID="text_embedding_endpoint"
 _INDEX_ID = "5709952999040745472"
-_ENDPOINT_ID = "1709912105005613056"
+_ENDPOINT_ID = "1011572687786475520"
 
 
-
+vertexai.init(
+    project=_PROJECT,
+    location=_TEXT_LOCATION
+)
+aiplatform.init(project=_PROJECT, location=_TEXT_LOCATION)
 
 class SingletonInstance:
     __instance = None
@@ -73,7 +85,7 @@ class ImageEmbeddingResponse(typing.NamedTuple):
 
 
 class StorageClient():
-    def __init__(self, project: str, bucket: str = "embedding-image"):
+    def __init__(self, project: str= _PROJECT):
         self.client = storage.Client(project = project)
 
     def get_bucket(self, bucket:str):
@@ -82,7 +94,7 @@ class StorageClient():
         
 
 class VectorSearchClient():
-    def __init__(self, index_endpoint: str, deployed_index_id: str, bucket_uri: str, index_id: str, endpoint_id: str):
+    def __init__(self, index_endpoint: str , deployed_index_id: str, bucket_uri: str, index_id: str, endpoint_id: str):
         self.index_endpoint = index_endpoint
         self.deployed_index_id = deployed_index_id
         self.index = aiplatform.MatchingEngineIndexEndpoint(index_endpoint)
@@ -111,16 +123,11 @@ class VectorSearchClient():
 
 # Using Google API
 class TextEmbeddingPredictionClient(SingletonInstance):
-    def __init__(self, project = "primeval-argon-420311", location: str = "us-central1", model: str = "textembedding-gecko@001"):
+    def __init__(self, project = _PROJECT, location: str = _TEXT_LOCATION, model: str = "textembedding-gecko@001"):
+        
         self.location = location
         self.project = project
         self.model = model
-        
-        vertexai.init(
-		project=self.project,
-		location=self.location
-		)
-        
         self.client = TextEmbeddingModel.from_pretrained(self.model)
         
     def generate_text_embeddings(self, texts: list) -> list:
@@ -131,7 +138,7 @@ class TextEmbeddingPredictionClient(SingletonInstance):
 
 # Using Langchain API
 class TextEmbeddingLCHClient(SingletonInstance):
-    def __init__(self,  index_id: str, endpoint_id:str, project = "primeval-argon-420311", location: str = "us-central1", model: str = "textembedding-gecko@001", bucket: str = "embedding-text"):
+    def __init__(self,  index_id: str, endpoint_id:str, project = _PROJECT, location: str = _TEXT_LOCATION, model: str = "textembedding-gecko@001", bucket: str = _TEXT_BUCKET):
         self.location = location
         self.project = project
         self.embedding_model = VertexAIEmbeddings(model_name=model)
@@ -144,6 +151,7 @@ class TextEmbeddingLCHClient(SingletonInstance):
                             embedding=self.embedding_model,
                             stream_update=True,
                         )
+        
     # upload text embedding to vectorstore
     def upload_embedding(self, record_data:typing.List[typing.Dict]):
         texts = []
@@ -172,8 +180,8 @@ class TextEmbeddingLCHClient(SingletonInstance):
     
             
 class ImageEmbeddingPredictionClient(SingletonInstance):
-    def __init__(self, project: str= "primeval-argon-420311",
-                 location: str = "us-central1",
+    def __init__(self, project: str= _PROJECT,
+                 location: str = _IMAGE_LOCATION,
                  api_regional_endpoint: str = "us-central1-aiplatform.googleapis.com"):
         
         client_options = {"api_endpoint": api_regional_endpoint}
@@ -218,7 +226,7 @@ class ImageEmbeddingPredictionClient(SingletonInstance):
 
 
 class ImageEmbeddingClient(SingletonInstance):
-    def __init__(self, project: str = "primeval-argon-420311", location: str = "us-central1"):
+    def __init__(self, project: str = _PROJECT, location: str = _IMAGE_LOCATION):
         self.location = location
         self.project = project
         self.storage_client = storage.Client(project = self.project)
@@ -300,6 +308,7 @@ def get_emb_result(file):
 
 def get_emb_result_text(text):
     text_embedding_client = TextEmbeddingLCHClient(index_id=_INDEX_ID, endpoint_id = _ENDPOINT_ID)
+    
     llm = VertexAI(model_name="gemini-pro")
     retriever = text_embedding_client.as_retriever()
     retrieval_qa = RetrievalQA.from_chain_type(
@@ -307,9 +316,7 @@ def get_emb_result_text(text):
     chain_type="stuff",
     retriever=retriever,
     return_source_documents=True,)
-    
-    question = "What is Individiual Savings Account? Tell me friendly"
-    response = retrieval_qa({"query": question})
+    response = retrieval_qa({"query": text})
     #print(f"{response['result']}")
     #print("REFERENCES")
     #print(f"{response['source_documents']}")
