@@ -344,6 +344,8 @@ def get_emb_result(text):
     return result
 
 
+
+
 def get_emb_result_image(file: bytes):
     image_embdding_client = ImageEmbeddingPredictionClient()
     vector = image_embdding_client.generate_image_embedding(image_bytes = file)

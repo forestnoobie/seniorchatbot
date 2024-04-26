@@ -25,19 +25,22 @@ config = {
 
 
 ##### Streamlit
-st.set_page_config(page_title="Silver lining", 
+st.set_page_config(page_title="Silver Aid", 
                    page_icon=":robot_face:",
                    layout="wide",
                    #initial_sidebar_state="expanded"
                    )
 
-st.image("./logo_long.png", width=100)
-st.title("Silver Lining")
+# title_cols = st.columns([1, 1, 5], gap="small")
+# with title_cols[0] :
+st.image("sa_logo.png", width=200)
 
+
+st.sidebar.image("./logo_long.png")
 with st.sidebar:
-    choice = option_menu("Navigator", ["Default", "Smishing test", "Ragtext"],
-                         icons=['house', 'kanban', 'bi bi-robot'],
-                         menu_icon="app-indicator", default_index=0,
+    choice = option_menu("Features", ["Default", "Smishing test", "Ragtext", "Ragimage"],
+                         icons=['house', 'kanban','bi bi-card-text', 'bi bi-image', "bi bi-zoom-in"],
+                         menu_icon="app-indicator", default_index=0, 
                          styles={
         "container": {"padding": "4!important", "background-color": "#08619b"},
         "icon": {"color": "black", "font-size": "25px"},
@@ -60,11 +63,11 @@ if "uploader_visible" not in st.session_state:
 if "direct_llm" not in st.session_state:
     st.session_state["direct_llm"] = False
 if "chat_session" not in st.session_state:
-    st.session_state["chat_session"] = llm.start_chat(history=[])
+    st.session_state["chat_session"] = llm.start_chat(history=[], response_validation=False)
 
 # Accept user input
 # Display image upload on app
-expander = st.expander(label = "Advanaced tools")
+expander = st.expander(label = "Advanced tools 🛠️")
 with expander :
     cols= st.columns((1,1))
     cols[0].button("Voice assistant", use_container_width=True, on_click=sp.click_microphone)

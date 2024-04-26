@@ -36,7 +36,8 @@ class image2txt():
         ## Upload image / Smishing test
         file = None
         if st.session_state["uploader_visible"]:
-            file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
+            file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])  
+            
 
         ## Speech
         # Accept user input
@@ -59,13 +60,25 @@ class image2txt():
         ## image input
         parts = []
         img_prompt = None
-        
-        if file : 
+        chat_prompt = None
+
+        if file :
+            with st.spinner("File processing"):
+                time.sleep(2)
+                with st.chat_message("assistant"):
+                    st.write("Your input image :")
+                    ## Display image
+                    st.image(file.getvalue())       
+                    st.session_state.messages.append({"role": "assistant", 
+                                                      "content": "Your input image :"})
+            chat_prompt = "analyze the image"
             img_prompt = mm.transform_file(file)
             parts.append(img_prompt)
 
         #Text  input
-        chat_prompt = voice_prompt
+        if voice_prompt : 
+            chat_prompt = voice_prompt
+
         if chat_prompt == None :
             chat_prompt =  st.chat_input("What's up?")
         
@@ -131,8 +144,18 @@ class image2txtsmishing():
         ## image input
         parts = []
         img_prompt = None
-        
-        if file : 
+
+        if file :
+            with st.spinner("File processing"):
+                time.sleep(2)
+                with st.chat_message("assistant"):
+                    st.write("Your input image :")
+                    ## Display image
+                    st.image(file.getvalue())
+                    st.session_state.messages.append({"role": "assistant", 
+                                                      "content": "Your input image :"})
+
+    
             img_prompt = mm.transform_file(file)
             parts.append(img_prompt)
 
@@ -193,12 +216,19 @@ class image2geminirag():
         ## Upload image / Smishing test
         file = None
         if st.session_state["uploader_visible"]:
-            file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
-
+            file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])  
 
             ## RAG Output
             result = []
             if file :
+                with st.spinner("File processing"):
+                    time.sleep(2)
+                    with st.chat_message("assistant"):
+                        st.write("Your input image :")
+                        ## Display image
+                        st.image(file.getvalue())
+                        st.session_state.messages.append({"role": "assistant", 
+                                                      "content": "Your input image :"})
                 img_prompt = mm.transform_file(file)
                 ## Capture goods name with gemini
                 parse_prompt = """
@@ -262,12 +292,17 @@ class image2geminirag():
                 gc.add_calendar(today_date)
                 with st.chat_message("assistant"):
                     st.markdown("I would add important dates in your google calander.:)")
+                    st.session_state.messages.append({"role": "assistant", 
+                                                      "content": "I would add important dates in your google calander.:)"})
+
 
 
         if parts :
             with st.chat_message("assistant"):
                 if   len(st.session_state.messages) == 0 : # Initial message
                     response = st.write_stream(response_generator())
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+
                     # TTS 
                    # sp.get_tts_output(response)
                 else : # Multimodal
@@ -295,21 +330,33 @@ class image2rag():
             ## RAG Output
             result = []
             if file :
+                with st.spinner("File processing"):
+                    time.sleep(2)
+                    with st.chat_message("assistant"):
+                        st.write("Your input image :")
+                        ## Display image
+                        st.image(file.getvalue())
+                        st.session_state.messages.append({"role": "assistant", 
+                                                      "content": "Your input image :"})
+
+
                 img_prompt = mm.transform_file(file)
                 # ## Capture goods name with gemini
-                # parse_prompt = """
-                # you will be given a captured chatting image on a mobile screen. 
-                # give me the name of the financial goods in the following chat image. 
-                # Answer in less than 10 words in short word format.
-                # """
-                # parts = [parse_prompt, img_prompt]
-                # response = st.session_state.chat_session.send_message(parts)   
-                # goods_name = response.text
+                parse_prompt = """
+                You are a banker assisting seniors.
+                You will be given a captured chatting image on a mobile screen. 
+                Find out what the customer is wondering about
+                """
+                parts = [parse_prompt, img_prompt]
+                response = st.session_state.chat_session.send_message(parts)   
+                goods_name = response.text
 
-                # embedding_prompt = """You are a banker assisting seniors. Return a short explanation of the following account named by searching in the vector database
-                # account_name : {}""".format(goods_name)
+                embedding_prompt = """You are a banker assisting seniors. Return a short explanation of the following account named by searching in the vector database
+                account_name : {}""".format(goods_name)
                 
                 result = emb.get_emb_result_image(file.getvalue())
+                # input image
+                #result = emb.get_emb_result_image(file.getvalue())
             if len(result)>=1:
                 with st.chat_message("assistant"):
                     st.write("Your anwser :")
