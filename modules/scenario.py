@@ -1,3 +1,4 @@
+import datetime
 import random
 import time
 
@@ -35,9 +36,6 @@ class image2txt():
         ## Upload image / Smishing test
         file = None
         if st.session_state["uploader_visible"]:
-            # fl_cols =  st.columns((1,1))
-            # fl_cols[0].button("Smishing test", on_click=emb.direct_llm, use_container_width=True, args=[True])
-            # fl_cols[1].button("Financial counseling", on_click=emb.direct_llm, use_container_width=True, args=[False])
             file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
 
         ## Speech
@@ -79,19 +77,19 @@ class image2txt():
                 st.markdown(chat_prompt)
 
             parts.insert(0, chat_prompt)
-            if "take out a loan" in chat_prompt:
-                today_date = datetime.datetime.now().strftime("%Y-%m-%d")
-                gc.add_calendar(today_date)
-                with st.chat_message("assistant"):
-                    st.markdown("I would add important dates in your google calander.:)")
-
-
+                     
         if parts :
             with st.chat_message("assistant"):
                 if   len(st.session_state.messages) == 0 : # Initial message
                     response = st.write_stream(response_generator())
                     # TTS 
                    # sp.get_tts_output(response)
+                
+                elif "take out a loan" in chat_prompt:
+                    today_date = datetime.datetime.now().strftime("%Y-%m-%d")
+                    gc.add_calendar(today_date)
+                    st.markdown("I would add important dates in your google calander.:)")
+                
                 else : # Multimodal
                     response = st.session_state.chat_session.send_message(parts) 
                     # TTS 
@@ -110,9 +108,6 @@ class image2txtsmishing():
         ## Upload image / Smishing test
         file = None
         if st.session_state["uploader_visible"]:
-            # fl_cols =  st.columns((1,1))
-            # fl_cols[0].button("Smishing test", on_click=emb.direct_llm, use_container_width=True, args=[True])
-            # fl_cols[1].button("Financial counseling", on_click=emb.direct_llm, use_container_width=True, args=[False])
             file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
 
         ## Speech
@@ -181,7 +176,8 @@ class image2txtsmishing():
                 else : # Multimodal
                     response = st.session_state.chat_session.send_message(parts) 
                     # TTS 
-                    #sp.get_tts_output(response.text)
+                    
+                    sp.get_tts_output(response.text)
                     st.markdown(response.text)
                     st.session_state.messages.append({"role": "assistant", "content": response})
  
@@ -197,9 +193,6 @@ class image2geminirag():
         ## Upload image / Smishing test
         file = None
         if st.session_state["uploader_visible"]:
-            fl_cols =  st.columns((1,1))
-            fl_cols[0].button("Smishing test", on_click=emb.direct_llm, use_container_width=True, args=[True])
-            fl_cols[1].button("Financial counseling", on_click=emb.direct_llm, use_container_width=True, args=[False])
             file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
 
 
@@ -296,9 +289,6 @@ class image2rag():
         ## Upload image / Smishing test
         file = None
         if st.session_state["uploader_visible"]:
-            fl_cols =  st.columns((1,1))
-            fl_cols[0].button("Smishing test", on_click=emb.direct_llm, use_container_width=True, args=[True])
-            fl_cols[1].button("Financial counseling", on_click=emb.direct_llm, use_container_width=True, args=[False])
             file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
 
 

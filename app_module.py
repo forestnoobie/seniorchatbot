@@ -2,9 +2,11 @@ import random
 import time
 import datetime
 
+from streamlit_option_menu import option_menu
 import streamlit as st
 import numpy as np
 from PIL import Image
+
 
 from modules import add_speech as sp
 from modules import add_embedding as emb
@@ -21,47 +23,29 @@ config = {
     "_DEPLOYED_INDEX_ID" : "multimodal_embedding_endpoint"    
 }
 
-# Streamed response emulator
-def response_generator():
-    response = random.choice(
-        [
-            "Hello there! I am elderly-friendly chatbot how can I assist you today?",
-            "Hi, human! Do you have trouble with any banking service? I can lend a hand for you",
-            "Do you need help?",
-        ]
-    )
-    for word in response.split():
-        yield word + " "
-        time.sleep(0.05)
-
 
 ##### Streamlit
-
-st.set_page_config(page_title="Ideas Bank Senior supperter (IDS)", 
+st.set_page_config(page_title="Silver lining", 
                    page_icon=":robot_face:",
                    layout="wide",
                    #initial_sidebar_state="expanded"
                    )
 
-st.header("Ideas Bank Senior supperter (IDS) :robot_face:")
-# page_bg_img = f"""
-# <style>
-# [data-testid="stAppViewContainer"] > .main {{
-# background-image: url("https://i.postimg.cc/4xgNnkfX/Untitled-design.png");
-# background-size: cover;
-# background-position: center center;
-# background-repeat: no-repeat;
-# background-attachment: local;
-# }}
-# [data-testid="stHeader"] {{
-# background: rgba(0,0,0,0);
-# }}
-# </style>
-# """
+st.image("./logo_long.png", width=100)
+st.title("Silver Lining")
 
-#st.markdown(page_bg_img, unsafe_allow_html=True)
-## load llm
-#llm = load_LLM(openai_api_key=openai_api_key)
+with st.sidebar:
+    choice = option_menu("Navigator", ["Default", "Smishing test", "Ragtext"],
+                         icons=['house', 'kanban', 'bi bi-robot'],
+                         menu_icon="app-indicator", default_index=0,
+                         styles={
+        "container": {"padding": "4!important", "background-color": "#08619b"},
+        "icon": {"color": "black", "font-size": "25px"},
+        "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px", "--hover-color": "#fafafa"},
+        "nav-link-selected": {"background-color": "#08c7b4"},
+    }
+    )
+
 llm = mm.get_gemini()
 
 # Initialize chat history
@@ -80,35 +64,23 @@ if "chat_session" not in st.session_state:
 
 # Accept user input
 # Display image upload on app
-expander = st.expander(label = "Advnaced tools")
+expander = st.expander(label = "Advanaced tools")
 with expander :
     cols= st.columns((1,1))
     cols[0].button("Voice assistant", use_container_width=True, on_click=sp.click_microphone)
-    cols[1].button("Upload image", use_container_width=True, on_click=emb.show_upload, args=[True])
+    cols[1].button("Upload image", use_container_width=True, on_click=emb.show_upload)
 
 
-# with st.form('my_form'):
-#     text = st.text_area('Enter text:', 'What are the three key pieces of advice for learning how to code?')
-#     submitted = st.form_submit_button('Submit')
-# if submitted : 
-#     st.warning('Smishing Warning!!',  icon='⚠')
-#     with st.chat_message("assistant"):
+if choice == "Default" :
+    bot = image2txt(config)
+elif choice == "Smishing test":
+    bot = image2txtsmishing(config)
+elif choice == "Ragtext":
+    bot = image2geminirag(config)
+elif choice == "Ragimage":
+    bot = image2rag(config)
 
-#         st.write("Write test")
-#         st.info("hello")
-        
 
-        
-# Display chat messages from history on app rerun
-# for content in st.session_state.chat_session.history:
-#     with st.chat_message("assistant" if content.role == "model" else "user"):
-#         #st.markdown(content.parts[0].text)
-#         st.markdown(content.parts[0].text)
-
-#bot = image2txt(config)
-bot = image2rag(config)
-#bot = image2geminirag(config)
-#bot = image2txtsmishing(config)
 bot.run()
 
 

@@ -54,17 +54,22 @@ _IMAGE_BUCKET_URI = f"gs://{_IMAGE_BUCKET}"
 
 # Set variables for the current deployed text index.
 _TEXT_DISPLAY_NAME = "text_embedding"
-_TEXT_DEPLOYED_INDEX_ID = "text_embedding_endpoint"
-_TEXT_API_ENDPOINT="1754456625.us-central1-854115243710.vdb.vertexai.goog"
-_TEXT_INDEX_ENDPOINT="projects/854115243710/locations/us-central1/indexEndpoints/1709912105005613056"
 _TEXT_INDEX_ID = "5709952999040745472"
 _TEXT_ENDPOINT_ID = "1011572687786475520"
 
+_TEXT_API_ENDPOINT="1764598898.us-central1-854115243710.vdb.vertexai.goog"
+_TEXT_DEPLOYED_INDEX_ID="text_embeding_endpoint_1714090605433"
+_TEXT_INDEX_ENDPOINT="projects/854115243710/locations/us-central1/indexEndpoints/1011572687786475520"
+
+
+
 # Set variables for the current deployed text index.
-_IMAGE_DISPLAY_NAME = "image_embedding"
-_IMAGE_DEPLOYED_INDEX_ID = "image_embedding_endpoint_1714039043054"
+
+_IMAGE_DEPLOYED_INDEX_ID = "image_embedding_endpoint_1714090648818"
 _IMAGE_API_ENDPOINT = "1253489155.us-east1-854115243710.vdb.vertexai.goog"
 _IMAGE_INDEX_ENDPOINT = "projects/854115243710/locations/us-east1/indexEndpoints/3300514004257996800"
+
+_IMAGE_DISPLAY_NAME = "image_embedding"
 _IMAGE_INDEX_ID = "6930485672662794240"
 _IMAGE_ENDPOINT_ID = "3300514004257996800"
 
@@ -308,8 +313,8 @@ class ImageEmbeddingClient(SingletonInstance):
 
 
 
-def show_upload(state:bool):
-    st.session_state["uploader_visible"] = state
+def show_upload():
+    st.session_state["uploader_visible"] = ~st.session_state["uploader_visible"]
 
 def direct_llm(state:bool):
     st.session_state["direct_llm"] = state
