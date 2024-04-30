@@ -151,7 +151,7 @@ class image2txtsmishing():
                 with st.chat_message("assistant"):
                     st.write("Your input image :")
                     ## Display image
-                    st.image(file.getvalue())
+                    st.image(file.getvalue(), width=300)
                     st.session_state.messages.append({"role": "assistant", 
                                                       "content": "Your input image :"})
 
@@ -183,10 +183,10 @@ class image2txtsmishing():
         smishing_prompt = """
             You are a professional banker. Image of a captured mobile screen will be 
             given as an input. Find out if the message is a smishing text or not. Alert the
-            user it the image is a smishsing image.
+            user it the image is a smishsing image
         """
         #import pdb; pdb.set_trace()
-        time.sleep(3)
+        time.sleep(1)
         parts.insert(0, smishing_prompt)
         if parts :
             with st.chat_message("assistant"):
@@ -200,7 +200,7 @@ class image2txtsmishing():
                     response = st.session_state.chat_session.send_message(parts) 
                     # TTS 
                     
-                    sp.get_tts_output(response.text)
+                    #sp.get_tts_output(response.text)
                     st.markdown(response.text)
                     st.session_state.messages.append({"role": "assistant", "content": response})
  
@@ -226,7 +226,7 @@ class image2geminirag():
                     with st.chat_message("assistant"):
                         st.write("Your input image :")
                         ## Display image
-                        st.image(file.getvalue())
+                        st.image(file.getvalue(), width=300)
                         st.session_state.messages.append({"role": "assistant", 
                                                       "content": "Your input image :"})
                 img_prompt = mm.transform_file(file)
@@ -276,8 +276,7 @@ class image2geminirag():
 
         #Text  input
         chat_prompt = voice_prompt
-        if chat_prompt == None :
-            chat_prompt =  st.chat_input("What's up?")
+        chat_prompt =  st.chat_input("What's up?")
         
         if chat_prompt :
             # Add user message to chat history
@@ -335,7 +334,7 @@ class image2rag():
                     with st.chat_message("assistant"):
                         st.write("Your input image :")
                         ## Display image
-                        st.image(file.getvalue())
+                        st.image(file.getvalue(), width=300)
                         st.session_state.messages.append({"role": "assistant", 
                                                       "content": "Your input image :"})
 
@@ -394,8 +393,8 @@ class image2rag():
 
         #Text  input
         chat_prompt = voice_prompt
-        if chat_prompt == None :
-            chat_prompt =  st.chat_input("What's up?")
+        #if chat_prompt == None :
+        chat_prompt =  st.chat_input("What's up?")
         
         if chat_prompt :
             # Add user message to chat history
@@ -417,11 +416,11 @@ class image2rag():
                 if   len(st.session_state.messages) == 0 : # Initial message
                     response = st.write_stream(response_generator())
                     # TTS 
-                    sp.get_tts_output(response)
+                    #sp.get_tts_output(response)
                 else : # Multimodal
                     response = st.session_state.chat_session.send_message(parts) 
                     # TTS 
-                    sp.get_tts_output(response.text)
+                    #sp.get_tts_output(response.text)
                     st.markdown(response.text)
                     st.session_state.messages.append({"role": "assistant", "content": response})
 
