@@ -61,8 +61,6 @@ if __name__  == "__main__":
     # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    if "mic" not in st.session_state:
-        st.session_state.mic = False
     if "play_stt" not in st.session_state:
         st.session_state.play_stt = False
     if "uploader_visible" not in st.session_state:

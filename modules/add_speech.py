@@ -12,13 +12,6 @@ RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 
 
-def speech_button():
-    return st.button("🎙️", on_click=click_microphone)
-
-def voice_input_button():
-    return st.button("🎙️ Press the button and speak!", on_click=click_play_stt)
-
-
 class MicrophoneStream(object):
     """Opens a recording stream as a generator yielding the audio chunks."""
 
@@ -125,7 +118,7 @@ def listen_print_loop(responses):
         stt_result = st.empty()
         if not result.is_final:
             stt_result.code(transcript + overwrite_chars + "\r", language="markdown")
-            sleep(0.5)
+            sleep(0.10)
             stt_result.empty()
 
             num_chars_printed = len(transcript)
@@ -174,7 +167,7 @@ def get_tts_output(user_input: str):
     )
     audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.LINEAR16,
-        speaking_rate=0.75,
+        speaking_rate=1.1,
     )
 
     response = client.synthesize_speech(
@@ -189,9 +182,4 @@ def get_tts_output(user_input: str):
 
 
 def click_microphone():
-    st.session_state.mic = not st.session_state.mic
-    st.session_state.play_stt = False
-
-
-def click_play_stt():
     st.session_state.play_stt = True
