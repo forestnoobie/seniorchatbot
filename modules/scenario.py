@@ -38,31 +38,21 @@ class image2txt():
         if st.session_state["uploader_visible"]:
             file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])  
             
-
-        ## Speech
         # Accept user input
-        col1, col2 = st.columns([12, 1])
-
+        # Speech input
         voice_prompt = None
-        with col1 :
-            # Voice input
-            if st.session_state.mic:
-                sp.voice_input_button()
-                if st.session_state.play_stt:
-                    voice_prompt = sp.get_stt_input()
-    
-        if voice_prompt :
-            st.session_state.messages.append({"role": "user", "content": voice_prompt})
-            with st.chat_message("user"):
-                st.markdown(voice_prompt)
-
+        if st.session_state.play_stt:
+            voice_prompt = sp.get_stt_input()
+        # Text input
+        # chat_input() should always be displayed
+        chat_prompt = st.chat_input("What's up?")
         
-        ## image input
+        # Image input
         parts = []
         img_prompt = None
-        chat_prompt = None
+        #chat_prompt = None
 
-        if file :
+        if file:
             with st.spinner("File processing"):
                 time.sleep(2)
                 with st.chat_message("assistant"):
@@ -75,21 +65,22 @@ class image2txt():
             img_prompt = mm.transform_file(file)
             parts.append(img_prompt)
 
-        #Text  input
-        if voice_prompt : 
+        # if voice_prompt, change it to chat_prompt
+        if voice_prompt: 
             chat_prompt = voice_prompt
 
-        if chat_prompt == None :
-            chat_prompt =  st.chat_input("What's up?")
-        
-        if chat_prompt :
-            # Add user message to chat history
+        if chat_prompt:
+            # Add user message to chat history (voice_prompt included)
             st.session_state.messages.append({"role": "user", "content": chat_prompt})
             # Display user message in chat message container
             with st.chat_message("user"):
                 st.markdown(chat_prompt)
 
+            default_prompt = """ You are a professional banker. When given a finance question,
+            give a brief but accurate answer. Answers should be 2 sentences maximum, and DO NOT use bullet points.
+            """
             parts.insert(0, chat_prompt)
+            parts.insert(0, default_prompt)
                      
         if parts :
             with st.chat_message("assistant"):
@@ -106,7 +97,8 @@ class image2txt():
                 else : # Multimodal
                     response = st.session_state.chat_session.send_message(parts) 
                     # TTS 
-                    #sp.get_tts_output(response.text)
+                    if voice_prompt != "":
+                        sp.get_tts_output(response.text)
                     st.markdown(response.text)
                     st.session_state.messages.append({"role": "assistant", "content": response})
               
@@ -123,25 +115,16 @@ class image2txtsmishing():
         if st.session_state["uploader_visible"]:
             file = st.file_uploader("Upload your data", type=['png', 'jpg', 'jpeg'])    
 
-        ## Speech
         # Accept user input
-        col1, col2 = st.columns([12, 1])
-
+        # Speech input
         voice_prompt = None
-        with col1 :
-            # Voice input
-            if st.session_state.mic:
-                sp.voice_input_button()
-                if st.session_state.play_stt:
-                    voice_prompt = sp.get_stt_input()
-    
-        if voice_prompt :
-            st.session_state.messages.append({"role": "user", "content": voice_prompt})
-            with st.chat_message("user"):
-                st.markdown(voice_prompt)
-
+        if st.session_state.play_stt:
+            voice_prompt = sp.get_stt_input()
+        # Text input
+        # chat_input() should always be displayed
+        chat_prompt = st.chat_input("What's up?")  
         
-        ## image input
+        # Image input
         parts = []
         img_prompt = None
 
@@ -159,11 +142,10 @@ class image2txtsmishing():
             img_prompt = mm.transform_file(file)
             parts.append(img_prompt)
 
-        #Text  input
-        chat_prompt = voice_prompt
-        if chat_prompt == None :
-            chat_prompt =  st.chat_input("What's up?")
-        
+        # so that the input types can be combined
+        if voice_prompt:
+            chat_prompt = voice_prompt
+
         # if chat_prompt :
         #     # Add user message to chat history
         #     st.session_state.messages.append({"role": "user", "content": chat_prompt})
@@ -199,8 +181,8 @@ class image2txtsmishing():
                 else : # Multimodal
                     response = st.session_state.chat_session.send_message(parts) 
                     # TTS 
-                    
-                    #sp.get_tts_output(response.text)
+                    if voice_prompt != "":
+                        sp.get_tts_output(response.text)
                     st.markdown(response.text)
                     st.session_state.messages.append({"role": "assistant", "content": response})
  
@@ -250,23 +232,16 @@ class image2geminirag():
                         st.write("Smishing is not suspected.")
 
         
-        ## Speech
         # Accept user input
-        col1, col2 = st.columns([12, 1])
-
+        # Voice input
         voice_prompt = None
-        with col1 :
-            # Voice input
-            if st.session_state.mic:
-                sp.voice_input_button()
-                if st.session_state.play_stt:
-                    voice_prompt = sp.get_stt_input()
-    
-        if voice_prompt :
-            st.session_state.messages.append({"role": "user", "content": voice_prompt})
-            with st.chat_message("user"):
-                st.markdown(voice_prompt)
-        ## image input
+        if st.session_state.play_stt:
+            voice_prompt = sp.get_stt_input()
+        # Text input
+        # chat_input() should always be displayed
+        chat_prompt = st.chat_input("What's up?")
+
+        # Image input
         parts = []
         img_prompt = None
         
@@ -274,9 +249,9 @@ class image2geminirag():
             img_prompt = mm.transform_file(file)
             parts.append(img_prompt)
 
-        #Text  input
-        chat_prompt = voice_prompt
-        chat_prompt =  st.chat_input("What's up?")
+        # so that the input types can be combined
+        if voice_prompt:
+            chat_prompt = voice_prompt
         
         if chat_prompt :
             # Add user message to chat history
@@ -307,7 +282,8 @@ class image2geminirag():
                 else : # Multimodal
                     response = st.session_state.chat_session.send_message(parts) 
                     # TTS 
-                    #sp.get_tts_output(response.text)
+                    if voice_prompt != "":
+                        sp.get_tts_output(response.text)
                     st.markdown(response.text)
                     st.session_state.messages.append({"role": "assistant", "content": response})
 
@@ -365,25 +341,16 @@ class image2rag():
             #         st.write("Smishing is not suspected.")
 
         
-        ## Speech
         # Accept user input
-        col1, col2 = st.columns([12, 1])
-
+        # Voice input
         voice_prompt = None
-        with col1 :
-            # Voice input
-            if st.session_state.mic:
-                sp.voice_input_button()
-                if st.session_state.play_stt:
-                    voice_prompt = sp.get_stt_input()
-    
-        if voice_prompt :
-            st.session_state.messages.append({"role": "user", "content": voice_prompt})
-            with st.chat_message("user"):
-                st.markdown(voice_prompt)
+        if st.session_state.play_stt:
+            voice_prompt = sp.get_stt_input()
+        # Text input
+        # chat_input() should always be displayed
+        chat_prompt = st.chat_input("What's up?")
 
-        
-        ## image input
+        # Image input
         parts = []
         img_prompt = None
         
@@ -391,10 +358,9 @@ class image2rag():
             img_prompt = mm.transform_file(file)
             parts.append(img_prompt)
 
-        #Text  input
-        chat_prompt = voice_prompt
-        #if chat_prompt == None :
-        chat_prompt =  st.chat_input("What's up?")
+        # so that the input types can be combined
+        if voice_prompt:
+            chat_prompt = voice_prompt
         
         if chat_prompt :
             # Add user message to chat history
@@ -420,7 +386,8 @@ class image2rag():
                 else : # Multimodal
                     response = st.session_state.chat_session.send_message(parts) 
                     # TTS 
-                    #sp.get_tts_output(response.text)
+                    if voice_prompt != "":
+                        sp.get_tts_output(response.text)
                     st.markdown(response.text)
                     st.session_state.messages.append({"role": "assistant", "content": response})
 
