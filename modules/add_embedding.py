@@ -11,7 +11,7 @@ import vertexai
 from vertexai.vision_models import MultiModalEmbeddingModel
 from vertexai.language_models import TextEmbeddingModel
 from vertexai.language_models import TextGenerationModel
-#import streamlit as st
+import streamlit as st
 
 ### Initial setting
 
@@ -301,11 +301,11 @@ class ImageEmbeddingClient(SingletonInstance):
         call(["gsutil", "cp", f"{embeddings_file.name}", f"{embedding_url}"])
 
 
-# def show_upload():
-#     st.session_state["uploader_visible"] = ~st.session_state["uploader_visible"]
+def show_upload():
+    st.session_state["uploader_visible"] = ~st.session_state["uploader_visible"]
 
-# def direct_llm(state:bool):
-#     st.session_state["direct_llm"] = state
+def direct_llm(state:bool):
+    st.session_state["direct_llm"] = state
 
 def get_emb_result_text(text):
     text_embdding_client = TextEmbeddingPredictionClient().getInstance()
@@ -361,13 +361,7 @@ def get_emb_result_image(file: bytes):
 
     
 def main():
-    client = StorageClient()
-    text_client = TextEmbeddingPredictionClient()
-    #embedding_client = TextEmbeddingClient()
-    #embedding_client.upload_text_embeddings("financial-product-text")
-    search_client = VectorSearchClient(index_endpoint_name= _TEXT_INDEX_ENDPOINT , deployed_index_id= _TEXT_DEPLOYED_INDEX_ID, bucket_uri= _TEXT_BUCKET_URI, index_id= _TEXT_INDEX_ID, endpoint_id= _TEXT_ENDPOINT_ID, location=_TEXT_LOCATION)
-
-    print(get_emb_result_text(text="what is isa"))
+    pass
 
 if __name__ == "__main__":
     main()
