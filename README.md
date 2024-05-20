@@ -3,9 +3,10 @@
 ---
 
 Silver AId is a chabot which supports seniors who have trouble with modern mobile apps.
+This project result of GenAI Hackathon hosted by hack2skill.
 
 - Demo Video : https://www.youtube.com/watch?v=O0yWoaaU8wY&t=120s
-- [Gen AI Hackathon link](https://hack2skill.com/genai_hackathon_apac_edition?#googtrans(en|ko-KR))
+- Hackathon Link : [Gen AI Hackathon link](https://hack2skill.com/genai_hackathon_apac_edition?#googtrans(en|ko-KR))
 
 ![Untitled](./images/Untitled.png)
 
